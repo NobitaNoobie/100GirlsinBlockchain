@@ -70,5 +70,23 @@ contract SimpleStorage
 
     //People public person = People({favNum: 2, name: "Tiyasa"});
 
-    
+    People[] public peoplestack; //dynamic data structure of type 'People'
+    /*
+    --> 'peoplestack' now becomes a stack of type People
+    */
+    function addPerson(string memory _name, uint256 _favNum) public 
+    {
+        peoplestack.push(People(_favNum, _name));
+    }
+    /*
+    the object was created in the push() for the above code
+    we can also create an object of People type then push it in the peoplestack
+    below is the alternative way
+    */
+    function addPerson1(string memory _name, uint256 _favNum) public 
+    {
+        People memory newperson = People({favNum: _favNum, name: _name});
+        //People memory newperson = People(_favNum, _name);
+        peoplestack.push(newperson);
+    }
 }
