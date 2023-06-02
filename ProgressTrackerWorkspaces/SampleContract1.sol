@@ -89,4 +89,24 @@ contract SimpleStorage
         //People memory newperson = People(_favNum, _name);
         peoplestack.push(newperson);
     }
+    
+    
+    /*
+    --> calldata
+    --> memory
+    --> storage
+    */
+
+    /*
+    NOTES:
+    --> Demonstrate mapping in Solidity
+    --> Syntax: mapping(type1 => type2) public map;
+    */
+    //let's map name to favorite number
+    mapping(string => uint256) public map;
+    function addPerson2(string memory _name, uint256 _favNum) public
+    {
+        map[_name] = _favNum;
+        peoplestack.push(People(map[_name], _name));
+    }
 }
