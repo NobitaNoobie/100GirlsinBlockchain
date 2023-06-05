@@ -102,6 +102,32 @@ constructor(bytes32[] memory proposalNames)
 - We iterate through the given proposal name list and create a `Proposal` type object and push it to the dynamic array `proposals`.
 ---
 
+## concept: `require()`
+- It operates in the manner that if the condition within the parenthesis is true, the compiler will execute the piece of code written beneath it. This is the first and compulsory argument passed to `require`.
+- As a second argument, you can also provide an explanation about what went wrong, enclosed within "".
+
+## concept: `external` keyword
+- These functions can be *called only outside the contract by other contracts*.
+- `this.function_name()` if we want to call such functions within the contract we use `this` keyword.
+- `external` uses less gas than `public`, because `public` copies the passed arguments to memory while `external` reads it directly from calldata, which is cheaper. The reason `public` uses memory is because the allow internal calling. 
+---
+## Authentication
+```solidity
+function giveRightToVote(address voter)
+{
+    require(msg.sender == chairperson, "Only chairperson can give access to voting rights");
+    //the person deploying(msg,sender) should be the address stored in the chairperson variable
+    
+    require(votersMap[voter].voted == false, "This person must be allowed to vote only once");
+    
+    require(votersMap[voter].weight == 0);
+    votersMap[voter].weight = 1;
+}
+```
+- This section is used to validate a `voter`. 
+- The second `require` statement checks if the `voter` has voted, if `true` the execution terminates with the error message in the "".
+---
+
 
 
 *Copyright: Tiyasa Khan*
