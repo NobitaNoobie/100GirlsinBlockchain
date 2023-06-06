@@ -115,18 +115,144 @@ constructor(bytes32[] memory proposalNames)
 ```solidity
 function giveRightToVote(address voter)
 {
-    require(msg.sender == chairperson, "Only chairperson can give access to voting rights");
+    require(msg.sender == chairperson, "Error: Only chairperson can give access to voting rights");
     //the person deploying(msg,sender) should be the address stored in the chairperson variable
     
-    require(votersMap[voter].voted == false, "This person must be allowed to vote only once");
+    require(votersMap[voter].voted == false, "Error: This person must be allowed to vote only once");
     
     require(votersMap[voter].weight == 0);
     votersMap[voter].weight = 1;
+    //we assign value to the vote only after authenticating him
 }
 ```
 - This section is used to validate a `voter`. 
 - The second `require` statement checks if the `voter` has voted, if `true` the execution terminates with the error message in the "".
 ---
+
+## Delegation
+```solidity
+// 'sender' to delegate 'to'
+function delegate(address to) external
+{
+    Voter storage sender = votersMap[msg.sender];
+    require(sender.weight != 0, "Error: You do not have the right to vote");
+    require(sender.voted == false, "Error: You have already voted");
+    require(to != msg.sender, "Error: self-delegation is not allowed");
+    
+    while(votersMap[to].delegate != address(0))
+    {
+        to = votersMap[to].delegate;
+        require(to != msg.sender, "Error: Found a loop in delegation");
+    }
+    
+    Voter storage delegate_ = votersMap[0];
+    require(delegate_.weight >= 1);
+    
+    sender.voted = true;
+    sender.delegate = to;
+    
+    if(delegate_.voted == true)
+    {
+        proposals[delegate_.vote].voteCount += sender.weight;
+    }
+    else
+    {
+        delegate_.weight += sender.weight;
+    }
+}
+```
+- In this section `sender` the one who deploys the contract(`msg.sender`) delegates `to`, to vote on his behalf. `Voter storage sender = votersMap[msg.sender];`
+
+1. Person who delegates = `sender`
+2. Person who he delegates to = `to`
+
+- We will mimic common grounds for delegation which are taken care of by the first three require statements.
+    - The `sender` must have a voting right. This has already been checked in the `Authentication` section
+    - The `sender` must not have already voted
+    - The `sender` is not allowed to delegate or nominate himself
+-  The while loop allows the delegation to be forwarded to subsequent addresses until the final delegate is reached. It checks if the current delegate (to) has delegated their vote to another address. If so, it updates the to variable to the new delegate address and continues the loop.
+-  Within the while loop, if a loop in delegation is detected, i.e., if the current delegate is the same as the sender. If a loop is found, an error is thrown.
+-  Increase the votes received by a proposal as per rules.
+---
+
+## Voting
+```solidity
+function vote(uint proposalnum) external
+{
+    Voter storage sender = msg.sender;
+    require(sender.weight != 0, "Error: You have no right to vote");
+    require(sender.voted == false, "Error: You have already voted");
+    sender.voted = true;
+    sneder.vote = proposal;
+    proposals[proposal].vote += sender.weight;
+}
+```
+- A `sender` will vote to a proposal number stored in `proposalnum`
+- The `sender` must be an *authenticated* voter and the he must not have already voted.
+- Update the variables,after voting, accordingly.
+- Increment the number of votes received on that `proposalnum`.
+---
+
+## Deciding the winning proposal
+```solidity
+function winningProposal() public view returns (uint winningProposal_)
+    {
+        uint winningVoteCount = 0;
+        for (uint p = 0; p < proposals.length; p++) {
+            if (proposals[p].voteCount > winningVoteCount) {
+                winningVoteCount = proposals[p].voteCount;
+                winningProposal_ = p;
+            }
+        }
+    }
+```
+- This function returns the winning proposal
+- Run a loop through all the proposals and keep udating the max vote count in each iteration.
+
+---
+
+## Displaying winner
+```solidity
+    function winnerName() external view returns(bytes32 _winnerName)
+    {
+        _winnerName = proposals[winningProposal()].name;
+    }
+}
+```
+
+# Self-modification of the code
+## Resolution in case of a tie
+```solidity
+function winningProposal() public view returns (uint[] memory winningProposals) {
+    uint winningVoteCount = 0;
+    uint numWinningProposals = 0;
+
+    // First, find the highest vote count
+    for (uint p = 0; p < proposals.length; p++) {
+        if (proposals[p].voteCount > winningVoteCount) {
+            winningVoteCount = proposals[p].voteCount;
+        }
+    }
+
+    // Next, count the number of proposals with the highest vote count
+    for (uint p = 0; p < proposals.length; p++) {
+        if (proposals[p].voteCount == winningVoteCount) {
+            numWinningProposals++;
+        }
+    }
+
+    // Finally, create an array to store the indices of the winning proposals
+    winningProposals = new uint[](numWinningProposals);
+    uint index = 0;
+    for (uint p = 0; p < proposals.length; p++) {
+        if (proposals[p].voteCount == winningVoteCount) {
+            winningProposals[index] = p;
+            index++;
+        }
+    }
+}
+```
+
 
 
 
